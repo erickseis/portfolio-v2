@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --color-neon-cyan: #00f3ff;
+  --color-neon-purple: #bc13fe;
+  --color-neon-green: #0aff0a;
+  
+  --color-dark-bg: #0a0a0a;
+  --color-dark-card: #121212;
+
+  --font-mono: "Fira Code", monospace;
+  --font-sans: "Inter", sans-serif;
+
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+  --animate-bounce-slow: bounce-slow 3s infinite ease-in-out;
+
+  @keyframes glow {
+    0% { box-shadow: 0 0 5px #00f3ff, 0 0 10px #00f3ff; }
+    100% { box-shadow: 0 0 20px #00f3ff, 0 0 40px #00f3ff; }
+  }
+
+  @keyframes bounce-slow {
+    0%, 100% { transform: translateY(-5%); }
+    50% { transform: translateY(5%); }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-dark-bg text-white font-sans overflow-x-hidden;
+  }
+  
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-bg;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-neon-cyan/30 rounded-full hover:bg-neon-cyan/50 transition-colors;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5), 0 0 20px rgba(0, 243, 255, 0.3);
+  }
+  
+  .box-glow {
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+  }
+
+  .glass-panel {
+    @apply bg-dark-card/60 backdrop-blur-md border border-white/10;
+  }
+}
+
+/* Vertical Timeline Customization */
+.vertical-timeline-element-content {
+  @apply !bg-dark-card/80 !backdrop-blur-md !border !border-neon-cyan/20 !shadow-[0_0_15px_rgba(0,243,255,0.05)] !rounded-xl;
+}
+
+.vertical-timeline-element-content-arrow {
+  @apply !border-r-dark-card/80;
+}
+
+.vertical-timeline-element-date {
+  @apply !text-gray-400 !opacity-100;
+}

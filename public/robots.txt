@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://ericksoto.dev/sitemap.xml
