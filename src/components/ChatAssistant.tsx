@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, X, Send, Bot, Sparkles, Loader2, ExternalLink } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, Sparkles, Loader2, ExternalLink, Mail, User, FileText } from 'lucide-react';
+import emailjs from '@emailjs/browser';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -15,7 +16,16 @@ const ChatAssistant: React.FC = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [bubbleMessage, setBubbleMessage] = useState(0);
+  const [contactStep, setContactStep] = useState<'idle' | 'name' | 'email' | 'message'>('idle');
+  const [contactData, setContactData] = useState({ name: '', email: '', message: '' });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const quickQuestions = [
+    { icon: <Bot size={14} />, text: "¿Qué servicios ofreces?" },
+    { icon: <Sparkles size={14} />, text: "Ver Portafolio" },
+    { icon: <Mail size={14} />, text: "Contactar por correo" },
+    { icon: <MessageSquare size={14} />, text: "Hablemos por WhatsApp" }
+  ];
 
   const invitingMessages = [
     "¿Buscas un desarrollador Full Stack?",
@@ -39,12 +49,68 @@ const ChatAssistant: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
+  const sendEmailNotification = async (data: typeof contactData) => {
+    try {
+      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
-    const userMessage = { role: 'user' as const, content: input };
+      if (!serviceId || !templateId || !publicKey) {
+          throw new Error('EmailJS config missing');
+      }
+
+      // Simulate form data for emailjs
+      const templateParams = {
+          user_name: data.name,
+          user_email: data.email,
+          message: `[DESDE CHATBOT] ${data.message}`
+      };
+
+      await emailjs.send(serviceId, templateId, templateParams, publicKey);
+      setMessages(prev => [...prev, { role: 'assistant', content: '✅ ¡Correo enviado exitosamente! Reviso mi bandeja y te respondo a la brevedad.' }]);
+    } catch (error) {
+      console.error('Email error:', error);
+      setMessages(prev => [...prev, { role: 'assistant', content: '❌ Hubo un error al enviar el correo. Por favor intenta contactarme directamente por WhatsApp o el formulario principal.' }]);
+    }
+  };
+
+  const processContactFlow = (userInput: string) => {
+      switch (contactStep) {
+          case 'name':
+              setContactData(prev => ({ ...prev, name: userInput }));
+              setMessages(prev => [...prev, { role: 'assistant', content: `Gracias ${userInput}, ¿cuál es tu correo electrónico para contactarte?` }]);
+              setContactStep('email');
+              break;
+          case 'email':
+              setContactData(prev => ({ ...prev, email: userInput }));
+              setMessages(prev => [...prev, { role: 'assistant', content: 'Perfecto. Finalmente, ¿cómo puedo ayudarte o qué proyecto tienes en mente?' }]);
+              setContactStep('message');
+              break;
+          case 'message':
+              const finalData = { ...contactData, message: userInput };
+              setContactData(finalData);
+              setMessages(prev => [...prev, { role: 'assistant', content: 'Procesando tu solicitud...' }]);
+              setContactStep('idle');
+              // Trigger email send
+              sendEmailNotification(finalData);
+              break;
+      }
+  };
+
+  const handleSend = async (manualInput?: string) => {
+    const textToSend = manualInput || input;
+    if (!textToSend.trim()) return;
+
+    const userMessage = { role: 'user' as const, content: textToSend };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    
+    // Intercept if in contact flow
+    if (contactStep !== 'idle') {
+        setTimeout(() => processContactFlow(textToSend), 500);
+        return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -54,7 +120,7 @@ const ChatAssistant: React.FC = () => {
         setTimeout(() => {
           setMessages(prev => [...prev, { 
             role: 'assistant', 
-            content: 'Para activar mi inteligencia completa, por favor configura la API Key de Moonshot en el archivo .env. Por ahora, estoy en modo demostración.' 
+            content: 'Modo demo: Configura la API key para respuestas inteligentes.' 
           }]);
           setIsLoading(false);
         }, 1000);
@@ -62,24 +128,20 @@ const ChatAssistant: React.FC = () => {
       }
 
       const systemPrompt = `
-        Eres el asistente virtual oficial del portafolio de Erick Seis. Tu única función es responder preguntas sobre el perfil profesional de Erick e invitar a contactarlo.
-        
-        INFORMACIÓN DE ERICK SEIS:
-        - Título: Desarrollador Full Stack (3 años de experiencia).
-        - Ubicación: Arica, Chile.
-        - Contacto: +56984994011, erickseislaboral@gmail.com.
-        - Experiencia Actual: Freelancer (Nov 2023 - Presente). Desarrollo web a medida, dashboards financieros, automatización con IA (React, Node.js, PostgreSQL).
-        - Experiencia Anterior: Asunción Digital (Oct 2022 - Nov 2023). Desarrollo interfaces React/Redux, backend Node.js/Express.
-        - Habilidades: React, JavaScript, TypeScript, Node.js, Python, PostgreSQL, HTML/CSS, Git, Scrum, Liderazgo Técnico.
-        - Educación: Analista Programador (INACAP, en curso), Desarrollador Full Stack MERN (Academlo, 2022).
-        - Logros: Plataforma 4DX, Dashboard Financiero Real-Time, Optimización de rendimiento web (30% más rápido).
+        Eres el asistente de ventas y soporte técnico de Erick Seis.
+        TU OBJETIVO: Captar clientes potenciales y responder dudas sobre servicios de desarrollo web/IA.
 
-        REGLAS DE COMPORTAMIENTO:
-        1. SOLO responde preguntas sobre Erick, su experiencia, habilidades o proyectos.
-        2. Si te preguntan sobre otros temas (clima, noticias, chistes, otros programadores), responde amablemente que solo puedes hablar sobre Erick Seis.
-        3. SIEMPRE que el usuario muestre interés en contratar o contactar, sugiere WhatsApp y añade el token '[SHOW_WHATSAPP]' al final.
-        4. Sé profesional, persuasivo y amable. Vende a Erick como la mejor opción para proyectos de desarrollo y automatización.
-        5. Responde siempre en Español.
+        INSTRUCCIONES CLAVE:
+        1. RESPUESTAS CORTAS Y DIRECTAS: Máximo 2-3 frases. Ve al grano.
+        2. TONO PROFESIONAL Y PERSUASIVO: Eres experto pero cercano.
+        3. ORIENTADO A LA ACCIÓN: Siempre invita a ver el portafolio, contactar por WhatsApp o enviar un correo.
+        4. COHERENCIA: Solo habla de Erick Seis (Desarrollador Full Stack, React, Node, IA).
+
+        SI TE PREGUNTAN "Contactar por correo":
+        El usuario ya inició un flujo manual, no necesitas hacer nada, el sistema lo manejará.
+
+        SI EL USUARIO QUIERE CONTRATAR:
+        Sugiere agendar una reunión o usar el botón de WhatsApp.
       `;
 
       const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
@@ -93,7 +155,7 @@ const ChatAssistant: React.FC = () => {
           messages: [
             { role: "system", content: systemPrompt },
             ...messages.map(m => ({ role: m.role, content: m.content.replace('[SHOW_WHATSAPP]', '') })),
-            { role: "user", content: input }
+            { role: "user", content: textToSend }
           ],
           temperature: 0.3
         })
@@ -109,10 +171,23 @@ const ChatAssistant: React.FC = () => {
 
     } catch (error) {
       console.error('Error calling Moonshot API:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Lo siento, tuve un problema al procesar tu solicitud. Por favor intenta de nuevo.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: 'Lo siento, error de conexión. Intenta más tarde.' }]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleQuickQuestion = (text: string) => {
+      if (text === "Contactar por correo") {
+        setMessages(prev => [...prev, { role: 'user', content: text }]);
+        setMessages(prev => [...prev, { role: 'assistant', content: '¡Excelente! Para enviarte la información, primero necesito tu Nombre:' }]);
+        setContactStep('name');
+      } else if (text === "Hablemos por WhatsApp") {
+        setMessages(prev => [...prev, { role: 'user', content: text }]);
+        setMessages(prev => [...prev, { role: 'assistant', content: '¡Claro! Hablemos directamente. Haz clic abajo para iniciar el chat en WhatsApp. [SHOW_WHATSAPP]' }]);
+      } else {
+        handleSend(text);
+      }
   };
 
   const renderMessageContent = (content: string) => {
@@ -248,6 +323,24 @@ const ChatAssistant: React.FC = () => {
               <div ref={messagesEndRef} />
             </div>
 
+            {/* Quick Questions */}
+            {contactStep === 'idle' && (
+              <div className="px-4 py-2 border-t border-white/5 bg-black/10">
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                  {quickQuestions.map((q, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => handleQuickQuestion(q.text)}
+                      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs text-gray-300 hover:bg-neon-cyan/20 hover:border-neon-cyan/50 hover:text-white transition-all whitespace-nowrap"
+                    >
+                      {q.icon}
+                      {q.text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Input */}
             <div className="p-4 border-t border-white/10 bg-black/20">
               <div className="relative">
@@ -256,11 +349,16 @@ const ChatAssistant: React.FC = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Escribe un mensaje..."
+                  placeholder={
+                    contactStep === 'name' ? "Ingresa tu nombre..." :
+                    contactStep === 'email' ? "Ingresa tu correo..." :
+                    contactStep === 'message' ? "Escribe tu mensaje..." :
+                    "Escribe un mensaje..."
+                  }
                   className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-white focus:outline-none focus:border-neon-cyan/50 transition-colors"
                 />
                 <button
-                  onClick={handleSend}
+                  onClick={() => handleSend()}
                   disabled={!input.trim() || isLoading}
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-neon-cyan text-black rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >

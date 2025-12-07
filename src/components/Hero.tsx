@@ -1,16 +1,50 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence as FramerAnimatePresence } from 'framer-motion';
+// @ts-ignore
+import { AnimatePresence as AnimationComponent } from './Animation';
 import { Terminal, Code2, Cpu, Download } from 'lucide-react';
 import cvFile from '../assets/ErickSeis.pdf';
 
 const Hero: React.FC = () => {
+  const [isHovered, setIsHovered] = useState(false);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseX = useSpring(x, { stiffness: 150, damping: 15 });
+  const mouseY = useSpring(y, { stiffness: 150, damping: 15 });
+  
+  const pupilX = useTransform(mouseX, (value) => value * 0.4);
+  const pupilY = useTransform(mouseY, (value) => value * 0.4);
+
+  function handleMouseMove({ currentTarget, clientX, clientY }: React.MouseEvent) {
+    const { left, top, width, height } = currentTarget.getBoundingClientRect();
+    const xPos = clientX - (left + width / 2);
+    const yPos = clientY - (top + height / 2);
+    x.set(xPos / 5);
+    y.set(yPos / 5);
+    setIsHovered(true);
+  }
+
+  function handleMouseLeave() {
+    x.set(0);
+    y.set(0);
+    setIsHovered(false);
+  }
+
   return (
     <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
       {/* Background Effects */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-neon-purple/20 rounded-full blur-[100px] animate-pulse" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-neon-cyan/20 rounded-full blur-[100px] animate-pulse delay-1000" />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+        <AnimationComponent />
+        <div 
+        className="absolute top-0 left-1/4 w-96 h-96 bg-neon-purple/20 rounded-full blur-[100px] animate-pulse" 
+        />
+        <div 
+        className="absolute bottom-0 right-1/4 w-96 h-96 bg-neon-cyan/20 rounded-full blur-[100px] animate-pulse delay-1000"
+         />
+        <div
+         className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" 
+         />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
@@ -80,28 +114,122 @@ const Hero: React.FC = () => {
               
               {/* Central "AI" Core */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-64 h-64 rounded-full bg-gradient-to-br from-dark-card to-black border border-white/10 flex items-center justify-center relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-neon-cyan/5 group-hover:bg-neon-cyan/10 transition-colors" />
+                <motion.div 
+                  onMouseMove={handleMouseMove}
+                  onMouseLeave={handleMouseLeave}
+                  style={{ x: mouseX, y: mouseY }}
+
+                  className="w-64 h-64 rounded-full border border-white/10 flex items-center justify-center relative group cursor-pointer"
+                >
+                  <div className="absolute inset-0 rounded-full overflow-hidden bg-gradient-to-br from-dark-card to-black">
+                    <div className="absolute inset-0 bg-neon-cyan/5 group-hover:bg-neon-cyan/10 transition-colors" />
+                  </div>
                   
                   {/* Floating Icons */}
-                  <motion.div 
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    className="relative z-10 grid grid-cols-2 gap-4"
-                  >
-                    <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                      <Code2 className="text-neon-cyan" size={32} />
-                    </div>
-                    <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                      <Terminal className="text-neon-purple" size={32} />
-                    </div>
-                    <div className="col-span-2 flex justify-center">
-                      <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                        <Cpu className="text-neon-green" size={32} />
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
+                  {/* Floating Icons or Face */}
+                  <FramerAnimatePresence mode="wait">
+                    {!isHovered ? (
+                      <motion.div 
+                        key="icons"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
+                        exit={{ opacity: 0, scale: 0.5 }}
+                        transition={{ duration: 0.3 }}
+                        className="relative z-10 grid grid-cols-2 gap-4"
+                      >
+                        <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                          <Code2 className="text-neon-cyan" size={32} />
+                        </div>
+                        <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                          <Terminal className="text-neon-purple" size={32} />
+                        </div>
+                        <div className="col-span-2 flex justify-center">
+                          <div className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                            <Cpu className="text-neon-green" size={32} />
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="face"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.5 }}
+                        transition={{ duration: 0.3 }}
+                        className="relative z-10 flex flex-col items-center gap-6"
+                      >
+                        {/* Eyes */}
+                        {/* Eyes */}
+                        <div className="flex gap-8">
+                          <motion.div 
+                            className="w-14 h-20 bg-neon-cyan/20 border-2 border-neon-cyan rounded-[50%] relative overflow-hidden flex items-center justify-center backdrop-blur-sm shadow-[0_0_15px_rgba(0,243,255,0.3)]"
+                            layoutId="eye-left"
+                          >
+                             {/* Shine */}
+                             <div className="absolute top-3 left-3 w-3 h-4 bg-white/80 rounded-full z-20 blur-[1px]" />
+                             
+                             {/* Pupil */}
+                             <motion.div 
+                               className="w-6 h-8 bg-neon-cyan rounded-full z-10 shadow-[0_0_10px_rgba(0,243,255,0.8)]" 
+                               style={{ x: pupilX, y: pupilY }}
+                             />
+                          </motion.div>
+                          <motion.div 
+                            className="w-14 h-20 bg-neon-cyan/20 border-2 border-neon-cyan rounded-[50%] relative overflow-hidden flex items-center justify-center backdrop-blur-sm shadow-[0_0_15px_rgba(0,243,255,0.3)]"
+                            layoutId="eye-right"
+                          >
+                             {/* Shine */}
+                             <div className="absolute top-3 left-3 w-3 h-4 bg-white/80 rounded-full z-20 blur-[1px]" />
+                             
+                             {/* Pupil */}
+                             <motion.div 
+                               className="w-6 h-8 bg-neon-cyan rounded-full z-10 shadow-[0_0_10px_rgba(0,243,255,0.8)]" 
+                               style={{ x: pupilX, y: pupilY }}
+                             />
+                          </motion.div>
+                        </div>
+                        {/* Mouth */}
+                        <motion.div 
+                          className="w-10 bg-neon-purple shadow-[0_0_15px_rgba(180,0,255,0.6)]"
+                          animate={{ 
+                            height: [6, 12, 8, 16, 6],
+                            borderRadius: [
+                              "2px 2px 10px 10px", 
+                              "4px 4px 12px 12px", 
+                              "3px 3px 10px 10px", 
+                              "4px 4px 14px 14px", 
+                              "2px 2px 10px 10px"
+                            ]
+                          }}
+                          transition={{ 
+                            duration: 1.5, 
+                            repeat: Infinity, 
+                            ease: "easeInOut",
+                            times: [0, 0.3, 0.5, 0.8, 1]
+                          }}
+                        />
+                        
+                        {/* Speech Bubble */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0, x: 20, y: -20 }}
+                            animate={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+                            transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
+                            className="absolute -top-32 -right-36 z-50 bg-black/80 backdrop-blur-xl border border-neon-cyan/50 p-5 rounded-2xl rounded-bl-sm w-56 shadow-[0_0_20px_rgba(0,243,255,0.15)] pointer-events-none"
+                        >
+                            <div className="space-y-2">
+                                <h3 className="text-neon-cyan font-bold text-sm tracking-wide">SOY BOTERIC</h3>
+                                <div className="w-full h-[1px] bg-gradient-to-r from-neon-cyan/50 to-transparent" />
+                                <p className="text-xs text-gray-300 font-mono leading-relaxed">
+                                   &gt; Full Stack Developer <br/>
+                                   &gt; Experto en UI/UX <br/>
+                                   &gt; Integrador de IA
+                                </p>
+                            </div>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </FramerAnimatePresence>
+                </motion.div>
               </div>
             </div>
           </motion.div>

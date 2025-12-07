@@ -6,7 +6,7 @@ import SectionWrapper from './SectionWrapper';
 const Projects: React.FC = () => {
   const projects = [
     {
-      title: "Plataforma de Gestión 4DX",
+      title: "Plataforma Gestión de Metodologias",
       description: "Plataforma interna para la gestión de metas y métricas predictivas. Digitalizó la metodología 4DX, mejorando la organización y el cumplimiento de objetivos clave del equipo.",
       tags: ["React", "Node.js", "Dashboard", "Management"],
       image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1000",
