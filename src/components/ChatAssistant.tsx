@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, X, Send, Bot, Sparkles, Loader2, ExternalLink, Mail, User, FileText } from 'lucide-react';
+import { MessageSquare, X, Send, Bot, Sparkles, Loader2, ExternalLink, Mail } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 
 interface Message {
