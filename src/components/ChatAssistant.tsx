@@ -56,14 +56,14 @@ const ChatAssistant: React.FC = () => {
       const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
       if (!serviceId || !templateId || !publicKey) {
-          throw new Error('EmailJS config missing');
+        throw new Error('EmailJS config missing');
       }
 
       // Simulate form data for emailjs
       const templateParams = {
-          user_name: data.name,
-          user_email: data.email,
-          message: `[DESDE CHATBOT] ${data.message}`
+        user_name: data.name,
+        user_email: data.email,
+        message: `[DESDE CHATBOT] ${data.message}`
       };
 
       await emailjs.send(serviceId, templateId, templateParams, publicKey);
@@ -75,26 +75,26 @@ const ChatAssistant: React.FC = () => {
   };
 
   const processContactFlow = (userInput: string) => {
-      switch (contactStep) {
-          case 'name':
-              setContactData(prev => ({ ...prev, name: userInput }));
-              setMessages(prev => [...prev, { role: 'assistant', content: `Gracias ${userInput}, ¿cuál es tu correo electrónico para contactarte?` }]);
-              setContactStep('email');
-              break;
-          case 'email':
-              setContactData(prev => ({ ...prev, email: userInput }));
-              setMessages(prev => [...prev, { role: 'assistant', content: 'Perfecto. Finalmente, ¿cómo puedo ayudarte o qué proyecto tienes en mente?' }]);
-              setContactStep('message');
-              break;
-          case 'message':
-              const finalData = { ...contactData, message: userInput };
-              setContactData(finalData);
-              setMessages(prev => [...prev, { role: 'assistant', content: 'Procesando tu solicitud...' }]);
-              setContactStep('idle');
-              // Trigger email send
-              sendEmailNotification(finalData);
-              break;
-      }
+    switch (contactStep) {
+      case 'name':
+        setContactData(prev => ({ ...prev, name: userInput }));
+        setMessages(prev => [...prev, { role: 'assistant', content: `Gracias ${userInput}, ¿cuál es tu correo electrónico para contactarte?` }]);
+        setContactStep('email');
+        break;
+      case 'email':
+        setContactData(prev => ({ ...prev, email: userInput }));
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Perfecto. Finalmente, ¿cómo puedo ayudarte o qué proyecto tienes en mente?' }]);
+        setContactStep('message');
+        break;
+      case 'message':
+        const finalData = { ...contactData, message: userInput };
+        setContactData(finalData);
+        setMessages(prev => [...prev, { role: 'assistant', content: 'Procesando tu solicitud...' }]);
+        setContactStep('idle');
+        // Trigger email send
+        sendEmailNotification(finalData);
+        break;
+    }
   };
 
   const handleSend = async (manualInput?: string) => {
@@ -104,23 +104,27 @@ const ChatAssistant: React.FC = () => {
     const userMessage = { role: 'user' as const, content: textToSend };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    
+
     // Intercept if in contact flow
     if (contactStep !== 'idle') {
-        setTimeout(() => processContactFlow(textToSend), 500);
-        return;
+      setTimeout(() => processContactFlow(textToSend), 500);
+      return;
     }
 
     setIsLoading(true);
 
     try {
-      const apiKey = import.meta.env.VITE_MOONSHOT_API_KEY;
-      
+
+      // const openRouter = new OpenRouter({
+      //   apiKey: import.meta.env.VITE_OPENROUTER_API_KEY
+      // });
+      const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
+
       if (!apiKey) {
         setTimeout(() => {
-          setMessages(prev => [...prev, { 
-            role: 'assistant', 
-            content: 'Modo demo: Configura la API key para respuestas inteligentes.' 
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: 'Modo demo: Configura la API key para respuestas inteligentes.'
           }]);
           setIsLoading(false);
         }, 1000);
@@ -144,25 +148,43 @@ const ChatAssistant: React.FC = () => {
         Sugiere agendar una reunión o usar el botón de WhatsApp.
       `;
 
-      const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+      // const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${apiKey}`
+      //   },
+      //   body: JSON.stringify({
+      //     model: "moonshot-v1-8k",
+      // messages: [
+      //   { role: "system", content: systemPrompt },
+      //   ...messages.map(m => ({ role: m.role, content: m.content.replace('[SHOW_WHATSAPP]', '') })),
+      //   { role: "user", content: textToSend }
+      // ],
+      //     temperature: 0.3
+      //   })
+      // });
+
+
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
+          Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "moonshot-v1-8k",
+          model: 'mistralai/mistral-nemo',
           messages: [
             { role: "system", content: systemPrompt },
             ...messages.map(m => ({ role: m.role, content: m.content.replace('[SHOW_WHATSAPP]', '') })),
             { role: "user", content: textToSend }
           ],
-          temperature: 0.3
-        })
+        }),
       });
 
       const data = await response.json();
-      
+
       if (data.choices && data.choices[0]) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.choices[0].message.content }]);
       } else {
@@ -178,16 +200,16 @@ const ChatAssistant: React.FC = () => {
   };
 
   const handleQuickQuestion = (text: string) => {
-      if (text === "Contactar por correo") {
-        setMessages(prev => [...prev, { role: 'user', content: text }]);
-        setMessages(prev => [...prev, { role: 'assistant', content: '¡Excelente! Para enviarte la información, primero necesito tu Nombre:' }]);
-        setContactStep('name');
-      } else if (text === "Hablemos por WhatsApp") {
-        setMessages(prev => [...prev, { role: 'user', content: text }]);
-        setMessages(prev => [...prev, { role: 'assistant', content: '¡Claro! Hablemos directamente. Haz clic abajo para iniciar el chat en WhatsApp. [SHOW_WHATSAPP]' }]);
-      } else {
-        handleSend(text);
-      }
+    if (text === "Contactar por correo") {
+      setMessages(prev => [...prev, { role: 'user', content: text }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: '¡Excelente! Para enviarte la información, primero necesito tu Nombre:' }]);
+      setContactStep('name');
+    } else if (text === "Hablemos por WhatsApp") {
+      setMessages(prev => [...prev, { role: 'user', content: text }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: '¡Claro! Hablemos directamente. Haz clic abajo para iniciar el chat en WhatsApp. [SHOW_WHATSAPP]' }]);
+    } else {
+      handleSend(text);
+    }
   };
 
   const renderMessageContent = (content: string) => {
@@ -198,9 +220,9 @@ const ChatAssistant: React.FC = () => {
       <div className="flex flex-col gap-3">
         <p className="whitespace-pre-wrap">{cleanContent}</p>
         {showWhatsapp && (
-          <a 
-            href="https://wa.me/56984994011" 
-            target="_blank" 
+          <a
+            href="https://wa.me/56984994011"
+            target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 p-3 bg-[#25D366]/10 border border-[#25D366]/30 rounded-xl hover:bg-[#25D366]/20 transition-all group cursor-pointer"
           >
@@ -245,18 +267,17 @@ const ChatAssistant: React.FC = () => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-[0_0_20px_rgba(0,243,255,0.3)] transition-all duration-300 group ${
-          isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'bg-gradient-to-r from-neon-cyan to-neon-purple text-black'
-        }`}
+        className={`fixed bottom-6 right-6 z-50 p-4 rounded-full shadow-[0_0_20px_rgba(0,243,255,0.3)] transition-all duration-300 group ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'bg-gradient-to-r from-neon-cyan to-neon-purple text-black'
+          }`}
       >
         <div className="relative">
           <Bot size={28} className="animate-bounce-slow" />
           <Sparkles size={16} className="absolute -top-2 -right-2 text-white animate-pulse" />
         </div>
-        
+
         {/* Ripple Effect */}
         <span className="absolute inset-0 rounded-full border-2 border-neon-cyan opacity-0 group-hover:animate-ping"></span>
-        
+
         <span className="absolute -top-1 -right-1 flex h-3 w-3">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
           <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
@@ -286,7 +307,7 @@ const ChatAssistant: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsOpen(false)}
                 className="text-gray-400 hover:text-white transition-colors"
               >
@@ -302,11 +323,10 @@ const ChatAssistant: React.FC = () => {
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] p-3 rounded-2xl text-sm ${
-                      msg.role === 'user'
-                        ? 'bg-neon-cyan text-black rounded-tr-none'
-                        : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'
-                    }`}
+                    className={`max-w-[85%] p-3 rounded-2xl text-sm ${msg.role === 'user'
+                      ? 'bg-neon-cyan text-black rounded-tr-none'
+                      : 'bg-white/10 text-gray-200 rounded-tl-none border border-white/5'
+                      }`}
                   >
                     {msg.role === 'assistant' ? renderMessageContent(msg.content) : msg.content}
                   </div>
@@ -351,9 +371,9 @@ const ChatAssistant: React.FC = () => {
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   placeholder={
                     contactStep === 'name' ? "Ingresa tu nombre..." :
-                    contactStep === 'email' ? "Ingresa tu correo..." :
-                    contactStep === 'message' ? "Escribe tu mensaje..." :
-                    "Escribe un mensaje..."
+                      contactStep === 'email' ? "Ingresa tu correo..." :
+                        contactStep === 'message' ? "Escribe tu mensaje..." :
+                          "Escribe un mensaje..."
                   }
                   className="w-full bg-white/5 border border-white/10 rounded-xl pl-4 pr-12 py-3 text-sm text-white focus:outline-none focus:border-neon-cyan/50 transition-colors"
                 />
