@@ -73,7 +73,7 @@ const Hero: React.FC = () => {
             </h1>
 
             <p className="text-xl text-gray-400 mb-8 max-w-lg mx-auto md:mx-0 leading-relaxed">
-              Desarrollador Full Stack con 3 años de experiencia. Especializado en crear soluciones web modernas, eficientes y escalables con <span className="text-white font-semibold">React</span>, <span className="text-white font-semibold">Node.js</span> y <span className="text-white font-semibold">IA</span>.
+              Desarrollador Full Stack. Especializado en crear soluciones web modernas, eficientes y escalables con <span className="text-white font-semibold">React</span>, <span className="text-white font-semibold">Node.js</span> y <span className="text-white font-semibold">IA</span>.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start flex-wrap">
